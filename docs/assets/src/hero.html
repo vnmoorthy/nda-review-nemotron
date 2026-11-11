@@ -1,0 +1,77 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0}
+body{width:1280px;height:640px;overflow:hidden;font-family:Inter,sans-serif;color:#eef2e6;
+  background:radial-gradient(900px 500px at 85% 20%,rgba(118,185,0,.28),transparent 60%),
+             radial-gradient(700px 500px at 0% 100%,rgba(124,58,237,.22),transparent 60%),#0b0d09}
+.grid{position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.04) 1px,transparent 1px);background-size:40px 40px;mask-image:radial-gradient(circle at 60% 40%,#000 30%,transparent 80%)}
+.left{position:absolute;left:64px;top:70px;width:560px}
+.logo{display:flex;align-items:center;gap:14px;font-weight:900;font-size:30px;letter-spacing:-.03em}
+.logo i{width:44px;height:44px;border-radius:12px;background:#76b900;display:grid;place-items:center;box-shadow:0 0 40px rgba(118,185,0,.5)}
+h1{font-size:54px;line-height:1.02;letter-spacing:-.045em;font-weight:900;margin-top:34px}
+h1 em{font-style:normal;background:linear-gradient(90deg,#a3e635,#76b900);-webkit-background-clip:text;color:transparent}
+p{margin-top:18px;font-size:19px;line-height:1.45;color:#b4bca7}
+.stats{display:flex;gap:12px;margin-top:30px}
+.stat{border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.04);border-radius:14px;padding:12px 16px}
+.stat b{display:block;font-size:28px;letter-spacing:-.03em}
+.stat span{font-size:12.5px;color:#9aa38d}
+.stat.hl{border-color:#76b900;background:rgba(118,185,0,.12)}
+.card{position:absolute;right:56px;top:64px;width:560px;border-radius:20px;background:#151912;border:1px solid #2a3022;box-shadow:0 30px 80px rgba(0,0,0,.6);overflow:hidden}
+.bar{display:flex;gap:7px;padding:13px 16px;border-bottom:1px solid #2a3022;align-items:center}
+.bar i{width:11px;height:11px;border-radius:50%;background:#3a4130}
+.bar span{margin-left:10px;font:500 12px JetBrains Mono,monospace;color:#7e8873}
+.body{display:grid;grid-template-columns:1fr 1fr}
+.col{padding:14px}
+.col+.col{border-left:1px solid #2a3022}
+.h{font:700 10.5px JetBrains Mono,monospace;letter-spacing:.08em;color:#7e8873;margin-bottom:9px}
+.item{border:1px solid #2a3022;border-radius:11px;padding:9px 10px;margin-bottom:8px}
+.item.on{border-color:#76b900;box-shadow:0 0 0 3px rgba(118,185,0,.18)}
+.k{font:600 10px JetBrains Mono,monospace;color:#7e8873}
+.t{font-weight:700;font-size:13px;margin:2px 0 6px}
+.pill{display:inline-block;font:800 9.5px Inter;letter-spacing:.05em;padding:3px 7px;border-radius:99px}
+.E{background:#12301f;color:#4ade80}.C{background:#3a1d0e;color:#fb923c}.N{background:#22262d;color:#9ca3af}
+.ck{float:right;font:700 10.5px Inter;color:#4ade80}
+.cites{margin-top:6px;font:700 10px JetBrains Mono,monospace;color:#7e8873}
+.cites b{color:#b8ef5a;background:rgba(118,185,0,.15);padding:1px 5px;border-radius:5px;margin-left:3px}
+.span{font-size:11.5px;line-height:1.5;color:#c8cfbc;padding:6px 8px;border-radius:8px;border-left:3px solid transparent;margin-bottom:4px}
+.span u{text-decoration:none;font:600 10px JetBrains Mono,monospace;color:#7e8873;margin-right:6px}
+.span.hit{background:#3a3410;border-left-color:#8fd400;color:#f4f1d0}
+.foot{position:absolute;left:64px;bottom:40px;font:600 13px JetBrains Mono,monospace;color:#7e8873;letter-spacing:.03em}
+.foot b{color:#b8ef5a}
+</style></head><body>
+<div class="grid"></div>
+<div class="left">
+  <div class="logo"><i><svg width="26" height="26" viewBox="0 0 24 24"><path d="M5 13l4 4 10-11" stroke="#0b1200" stroke-width="3.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></i>ClauseCite</div>
+  <h1>Contract review that <em>cites its evidence.</em></h1>
+  <p>A fine-tuned 4B Nemotron answers a 17-point NDA checklist and points to the exact clauses, ahead of a frontier model at ~8× lower cost.</p>
+  <div class="stats">
+    <div class="stat hl"><b>87.6%</b><span>verdict accuracy</span></div>
+    <div class="stat hl"><b>80.2</b><span>evidence-F1</span></div>
+    <div class="stat"><b>+24 pts</b><span>over the base 4B</span></div>
+  </div>
+</div>
+<div class="card">
+  <div class="bar"><i></i><i></i><i></i><span>nda-review · 064-19 NDA 2019 · 118 spans</span></div>
+  <div class="body">
+    <div class="col">
+      <div class="h">CHECKLIST · 17 ITEMS</div>
+      <div class="item on"><span class="ck">✓ expert</span><div class="k">nda-5</div><div class="t">Sharing with employees</div><span class="pill E">ENTAILMENT</span><div class="cites">cites<b>[38]</b><b>[55]</b></div></div>
+      <div class="item"><span class="ck">✓ expert</span><div class="k">nda-2</div><div class="t">Technical info only</div><span class="pill C">CONTRADICTION</span><div class="cites">cites<b>[25]</b><b>[28]</b><b>[29]</b></div></div>
+      <div class="item"><span class="ck">✓ expert</span><div class="k">nda-11</div><div class="t">No reverse engineering</div><span class="pill N">NOT MENTIONED</span></div>
+      <div class="item"><span class="ck">✓ expert</span><div class="k">nda-16</div><div class="t">Return of confidential info</div><span class="pill E">ENTAILMENT</span><div class="cites">cites<b>[84]</b><b>[85]</b><b>[86]</b><b>[87]</b></div></div>
+    </div>
+    <div class="col">
+      <div class="h">CONTRACT · NUMBERED SPANS</div>
+      <div class="span"><u>[36]</u>2. Prohibition on Disclosure of Confidential Information.</div>
+      <div class="span"><u>[37]</u>The Parties will:</div>
+      <div class="span hit"><u>[38]</u>a. limit disclosure of any Confidential Information to its directors, officers, employees, agents or representatives (collectively "Representatives") who have a need to know such Confidential Information…</div>
+      <div class="span"><u>[39]</u>b. keep all Confidential Information strictly confidential by using a reasonable degree of care…</div>
+      <div class="span"><u>[54]</u>b. No Disclosure.</div>
+      <div class="span hit"><u>[55]</u>The Receiving Party agrees to use the same degree of protection it uses for its own trade secret information…</div>
+    </div>
+  </div>
+</div>
+<div class="foot">NVIDIA NEMOTRON 3.5 BOLT E4B · LORA SFT · AMAZON SAGEMAKER · vLLM · <b>CONTRACTNLI</b></div>
+</body></html>

@@ -1,0 +1,109 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0}
+body{width:1600px;height:1000px;overflow:hidden;font-family:Inter,sans-serif;color:#14170f;background:#fbfcf8;position:relative}
+.title{position:absolute;left:48px;top:36px}
+.title h1{font-size:30px;letter-spacing:-.03em;font-weight:900}
+.title p{color:#5d6455;font-size:15px;margin-top:4px}
+.lane{position:absolute;left:32px;right:32px;border:1.5px dashed #c9d0bd;border-radius:22px}
+.lane .tag{position:absolute;top:-12px;left:20px;background:#fbfcf8;padding:0 10px;font:700 12px JetBrains Mono,monospace;letter-spacing:.08em;color:#5d6455}
+.aws{border-color:#f0a35b}.aws .tag{color:#b45309}
+.box{position:absolute;background:#fff;border:1.5px solid #dfe4d6;border-radius:16px;padding:14px 16px;box-shadow:0 1px 2px rgba(0,0,0,.04),0 10px 24px rgba(20,23,15,.06)}
+.box .n{font:700 11px JetBrains Mono,monospace;color:#76b900;letter-spacing:.06em}
+.box h3{font-size:17px;letter-spacing:-.02em;margin:3px 0 7px}
+.box ul{list-style:none;padding:0;font-size:12.5px;line-height:1.55;color:#4b5244}
+.box ul li::before{content:"› ";color:#9aa38d}
+.box code{font:600 11.5px JetBrains Mono,monospace;background:#f1f4ec;padding:1px 5px;border-radius:5px;color:#3f6400}
+.box.hl{border-color:#76b900;box-shadow:0 0 0 4px rgba(118,185,0,.12),0 10px 24px rgba(20,23,15,.06)}
+.box.store{background:#f7f9f3;border-style:dashed}
+.box.purple{border-color:#a78bfa}
+.box.purple .n{color:#7c3aed}
+svg{position:absolute;inset:0;pointer-events:none;z-index:1}
+.lane{z-index:2}.lane .tag{z-index:3}
+.metrics{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
+.metrics span{font:700 11px JetBrains Mono,monospace;padding:3px 7px;border-radius:7px;background:#ecf6dc;color:#3f6400}
+.metrics span.o{background:#fdeadf;color:#c2410c}.metrics span.g{background:#eef0f3;color:#4b5563}
+.callout{position:absolute;left:48px;bottom:30px;right:48px;display:flex;gap:14px}
+.callout div{flex:1;background:#14170f;color:#e9eedf;border-radius:14px;padding:12px 16px;font-size:13px;line-height:1.45}
+.callout b{color:#a3e635}
+</style></head><body>
+<div class="title"><h1>ClauseCite — system architecture</h1><p>Four notebooks, one prompt builder, one scorer. Same <code style="font:600 13px JetBrains Mono">build_messages()</code> renders the turns for training, serving and baselines, so there is no train/serve skew.</p></div>
+
+<div class="lane" style="top:118px;height:250px"><span class="tag">① DATA · notebook 1-prepare-data</span></div>
+<div class="lane aws" style="top:400px;height:258px"><span class="tag">② ③ AMAZON SAGEMAKER AI · notebooks 2-fine-tune-llm, 3-deployment</span></div>
+<div class="lane" style="top:690px;height:200px"><span class="tag">④ EVALUATION + PRODUCT · notebook 4-evaluation, demo/</span></div>
+
+<!-- row 1 -->
+<div class="box store" style="left:60px;top:146px;width:300px;height:200px">
+  <div class="n">SOURCE</div><h3>ContractNLI dataset</h3>
+  <ul><li>607 real NDAs (EDGAR + web), CC-BY-4.0</li><li>17 expert-annotated hypotheses each</li><li>label + supporting span ids</li><li>doc-level split: <code>423</code> / <code>61</code> / <code>123</code></li></ul>
+</div>
+<div class="box hl" style="left:420px;top:146px;width:420px;height:200px">
+  <div class="n">contractnli.py</div><h3>Prompt builder (single source of truth)</h3>
+  <ul><li><code>doc_spans()</code> → contract as numbered clauses [0]…[n]</li><li><code>build_messages()</code> → system (instruction + 17-item checklist) + user (contract)</li><li>completion = strict JSON: label + evidence per item</li><li><code>enable_thinking=False</code> via chat-template kwargs</li></ul>
+</div>
+<div class="box" style="left:900px;top:146px;width:300px;height:200px">
+  <div class="n">TOKENIZER CHECK</div><h3>Length budget</h3>
+  <ul><li>model's own chat template</li><li>median 3,281 · p95 6,344 tokens</li><li><code>max_length 8192</code> → 4 of 423 truncated</li><li>assert no <code>&lt;|think|&gt;</code> token</li></ul>
+</div>
+<div class="box store" style="left:1260px;top:146px;width:290px;height:200px">
+  <div class="n">AMAZON S3</div><h3>Training inputs</h3>
+  <ul><li><code>train/dataset.jsonl</code></li><li><code>val/dataset.jsonl</code></li><li><code>config/args.yaml</code></li><li>test split kept local for eval</li></ul>
+</div>
+
+<!-- row 2 -->
+<div class="box hl" style="left:60px;top:428px;width:470px;height:208px">
+  <div class="n">SAGEMAKER TRAINING JOB · ModelTrainer</div><h3>LoRA SFT of Nemotron 3.5 Bolt E4B</h3>
+  <ul><li>PyTorch 2.8 DLC · <code>scripts/train.py</code> (TRL SFTTrainer + PEFT)</li><li>LoRA r=32 α=64 on q/k/v/o + MLP · bf16 · 1 epoch · lr 1e-4 cosine</li><li>completion-only loss: only the JSON answer is supervised</li><li>instance preference: g7.2xl → g6e.2xl → g5.2xl → …</li><li>~32 min on 1× ml.g7.2xlarge</li></ul>
+</div>
+<div class="box" style="left:580px;top:428px;width:250px;height:208px">
+  <div class="n">TRACKING</div><h3>SageMaker MLflow App</h3>
+  <ul><li>loss, eval, params</li><li>experiment per run</li><li>optional model registry</li></ul>
+</div>
+<div class="box store" style="left:880px;top:428px;width:250px;height:208px">
+  <div class="n">AMAZON S3</div><h3>Merged checkpoint</h3>
+  <ul><li>LoRA merged into base</li><li><code>model.tar.gz</code> · 12.2 GB</li><li>source of truth for deploy</li></ul>
+</div>
+<div class="box hl" style="left:1180px;top:428px;width:370px;height:208px">
+  <div class="n">SAGEMAKER REAL-TIME ENDPOINT</div><h3>vLLM 0.31 serving</h3>
+  <ul><li>OpenAI-style chat API, served as <code>nemotron-contractnli</code></li><li>1 GPU · instance pools g7.2xl → g5.xl → g6.xl…</li><li>chunked prefill · bf16 · max 8 seqs</li><li>InService in ~7.5 min · ~6–8 s per contract</li></ul>
+</div>
+
+<!-- row 3 -->
+<div class="box" style="left:60px;top:718px;width:470px;height:152px">
+  <div class="n">contractnli_scorer.py</div><h3>Deterministic scorer, 123 held-out NDAs</h3>
+  <div class="metrics"><span>accuracy 87.6</span><span>evidence-F1 80.2</span><span>contradiction 65.8</span><span>JSON 100</span></div>
+  <ul style="margin-top:7px"><li>same scorer packaged for managed evaluation (Lambda-style)</li></ul>
+</div>
+<div class="box purple" style="left:580px;top:718px;width:420px;height:152px">
+  <div class="n">BASELINES + JUDGE</div><h3>Base 4B · Claude Sonnet 5 · LLM judge</h3>
+  <div class="metrics"><span class="g">base 63.5 / 57.9</span><span class="o">Sonnet 5 84.1 / 68.6</span></div>
+  <ul style="margin-top:7px"><li>Bedrock batch judge: carve-outs, completeness, evidence</li></ul>
+</div>
+<div class="box hl" style="left:1050px;top:718px;width:500px;height:152px">
+  <div class="n">PRODUCT · GitHub Pages</div><h3>ClauseCite explorer</h3>
+  <ul><li><code>build_demo_data.py</code> re-scores every output (369 checks)</li><li>click an item → cited clauses highlight in the contract</li><li>"your NDA" → builds the exact endpoint request in-browser</li></ul>
+</div>
+
+<svg viewBox="0 0 1600 1000">
+  <defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#76b900"/></marker>
+  <marker id="b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#9aa38d"/></marker></defs>
+  <g stroke="#76b900" stroke-width="2.5" fill="none" marker-end="url(#a)">
+    <path d="M362 246H416"/><path d="M842 246H896"/><path d="M1202 246H1256"/>
+    <path d="M1405 348V384H295V424"/>
+    <path d="M532 532H576"/><path d="M832 532H876"/><path d="M1132 532H1176"/>
+    <path d="M1365 638V676H295V714"/>
+    <path d="M532 794H576"/><path d="M1002 794H1046"/>
+  </g>
+  <g stroke="#9aa38d" stroke-width="2" stroke-dasharray="6 6" fill="none" marker-end="url(#b)">
+    <path d="M630 348V376H1100V424" style="display:none"/>
+  </g>
+</svg>
+<div class="callout">
+  <div><b>One prompt, three callers.</b> Training records, endpoint requests and Bedrock baselines all come from <code style="color:#a3e635">build_messages()</code>.</div>
+  <div><b>Evidence is the product.</b> Guessing the majority verdict scores 43% accuracy but 0 evidence-F1.</div>
+  <div><b>Pay only while serving.</b> Endpoint, config and model are deleted at the end of notebook 4.</div>
+</div>
+</body></html>

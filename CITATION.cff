@@ -1,0 +1,14 @@
+cff-version: 1.2.0
+title: "ClauseCite: evidence-grounded NDA review with a fine-tuned Nemotron 3.5 Bolt E4B"
+message: "If you use this work, please cite it and the ContractNLI dataset."
+authors:
+  - name: "vnmoorthy"
+repository-code: "https://github.com/vnmoorthy/nda-review-nemotron"
+url: "https://vnmoorthy.github.io/nda-review-nemotron/"
+license: MIT-0
+references:
+  - type: conference-paper
+    title: "ContractNLI: A Dataset for Document-level Natural Language Inference for Contracts"
+    authors: [{family-names: Koreeda, given-names: Yuta}, {family-names: Manning, given-names: Christopher D.}]
+    conference: {name: "Findings of EMNLP 2021"}
+    year: 2021
