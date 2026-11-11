@@ -12,7 +12,7 @@
 [![Model](https://img.shields.io/badge/model-Nemotron%203.5%20Bolt%20E4B-76b900?style=for-the-badge&logo=nvidia&logoColor=white)](https://huggingface.co/nvidia)
 [![Platform](https://img.shields.io/badge/Amazon%20SageMaker%20AI-FF9900?style=for-the-badge&logo=amazonwebservices&logoColor=white)](https://aws.amazon.com/sagemaker/)
 
-[**Live demo**](https://vnmoorthy.github.io/nda-review-nemotron/) · [Results](#-results) · [Architecture](#-architecture) · [Quickstart](#-quickstart) · [How it works](#-how-it-works) · [FAQ](#-faq)
+[**Live demo**](https://vnmoorthy.github.io/nda-review-nemotron/) · [Pitch deck (.pptx)](docs/ClauseCite-pitch-deck.pptx) · [Results](#-results) · [Architecture](#-architecture) · [Quickstart](#-quickstart) · [How it works](#-how-it-works) · [FAQ](#-faq)
 
 </div>
 
