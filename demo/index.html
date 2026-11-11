@@ -86,7 +86,7 @@ h1 em{font-style:normal;color:var(--brand-ink)}
 .chip{font:600 12px JetBrains Mono,monospace;padding:4px 9px;border-radius:99px;background:var(--panel);border:1px solid var(--line)}
 .chip.good{border-color:var(--ent);color:var(--ent)} .chip.bad{border-color:var(--con);color:var(--con)}
 .split{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr)}
-.pane{min-width:0;max-height:calc(100vh - 40px);overflow:auto;padding:14px 16px}
+.pane{position:relative;min-width:0;max-height:calc(100vh - 40px);overflow:auto;padding:14px 16px}
 .pane+.pane{border-left:1px solid var(--line)}
 .pane h4{margin:2px 0 10px;font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
 .span{display:grid;grid-template-columns:44px 1fr;gap:8px;padding:6px 8px;border-radius:8px;font-size:13.5px;line-height:1.55;border-left:3px solid transparent;scroll-margin:80px}
@@ -134,6 +134,8 @@ footer{color:var(--muted);font-size:13px;padding:24px 0 40px;border-top:1px soli
   .kpi b{font-size:24px}
 }
 html,body{overflow-x:hidden}
+.embed header.top,.embed .hero,.embed .byo,.embed footer{display:none}
+.embed .app{margin:16px 0}
 </style>
 </head>
 <body>
@@ -208,9 +210,13 @@ html,body{overflow-x:hidden}
 
 <script>
 const $ = s => document.querySelector(s);
+const EMBED = new URLSearchParams(location.search).has('embed');
+if (EMBED) document.documentElement.classList.add('embed');
 const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const COLORS = {tuned:'var(--brand)', frontier:'#f59e0b', base:'#9ca3af'};
+const LABEL = {Entailment:'Entailment', Contradiction:'Contradiction', NotMentioned:'Not mentioned'};
 const SHORT = {tuned:'Fine-tuned 4B', frontier:'Claude Sonnet 5', base:'Base 4B'};
+let jump = false;
 let META, cur = null, model = 'tuned', sel = null, cache = {};
 
 // theme toggle (remembered per browser)
@@ -243,8 +249,11 @@ async function init(){
     document.querySelectorAll('#models button').forEach(b => b.classList.toggle('on', b.dataset.m === m)); render(); };
   $('#q').oninput = list; $('#sort').onchange = list;
   list();
-  const start = Number(new URLSearchParams(location.hash.slice(1)).get('c') ?? 0);
-  open(Number.isFinite(start) ? start : 0);
+  const h = new URLSearchParams(location.hash.slice(1));
+  const start = Number(h.get('c') ?? 0);
+  if (['tuned','frontier','base'].includes(h.get('m'))) $('#models').querySelector(`[data-m="${h.get('m')}"]`).click();
+  await open(Number.isInteger(start) && start >= 0 && start < META.contracts.length ? start : 0, h.get('k'));
+  if (h.get('k') && !EMBED) document.getElementById('explore').scrollIntoView();
 }
 
 function list(){
@@ -260,10 +269,10 @@ function list(){
   $('#list').onclick = e => { const b = e.target.closest('.item'); if (b) open(+b.dataset.i); };
 }
 
-async function open(i){
+async function open(i, k = null){
   if (!cache[i]) cache[i] = await (await fetch(`data/c/${i}.json`)).json();
-  cur = cache[i]; sel = null;
-  history.replaceState(null, '', '#c=' + i);
+  cur = cache[i]; sel = k && META.checklist[k] ? k : null; jump = true;
+  history.replaceState(null, '', '#c=' + i + (sel ? '&k=' + sel : ''));
   document.querySelectorAll('.item').forEach(b => b.classList.toggle('on', +b.dataset.i === i));
   render();
 }
@@ -294,17 +303,21 @@ function render(){
     html += `<div class="card ${sel===k?'on':''}" data-k="${k}">
       <div class="top2"><span class="k">${k}</span><span class="s">${esc(META.checklist[k].short)}</span>
         <span class="ok ${right?'y':'n'}">${right?'✓ matches expert':'✗ expert: '+g.label}</span></div>
-      <div class="top2" style="margin-top:6px"><span class="pill ${esc(lab)}">${esc(lab)}</span></div>
+      <div class="top2" style="margin-top:6px"><span class="pill ${esc(lab)}">${esc(LABEL[lab]||lab)}</span></div>
       <div class="h">${esc(META.checklist[k].hypothesis)}</div>${cites}</div>`;
   }
   $('#checklist').innerHTML = html;
-  $('#checklist').onclick = e => { const c = e.target.closest('.card'); if (!c) return; sel = sel === c.dataset.k ? null : c.dataset.k; render(); };
+  $('#checklist').onclick = e => { const c = e.target.closest('.card'); if (!c) return; sel = sel === c.dataset.k ? null : c.dataset.k;
+    history.replaceState(null, '', '#c=' + cur.i + (sel ? '&k=' + sel : '')); render(); };
   const pred = new Set(), gold = new Set();
   if (sel){ ((M.answer[sel]||{}).evidence||[]).forEach(n=>pred.add(+n)); (cur.gold[sel]||{evidence:[]}).evidence.forEach(n=>gold.add(+n)); }
   $('#contract').innerHTML = `<h4>Contract · <span style="color:var(--brand-ink)">▌model cites</span> · <span style="color:var(--gold)">▌expert cites</span></h4>` +
     cur.spans.map(([n,t]) => `<div class="span ${pred.has(n)?'pred':''} ${gold.has(n)?'gold':''}" id="s${n}"><span class="n">[${n}]</span><span>${esc(t)}</span></div>`).join('');
   const first = [...pred, ...gold].sort((a,b)=>a-b)[0];
-  if (first !== undefined){ const el = document.getElementById('s'+first); if (el) el.scrollIntoView({block:'center', behavior:'smooth'}); }
+  const pane = $('#contract');
+  if (first !== undefined){ const el = document.getElementById('s'+first);
+    if (el) pane.scrollTo({top: Math.max(0, el.offsetTop - pane.clientHeight/3), behavior: jump ? 'auto' : 'smooth'}); }
+  jump = false;
 }
 
 // ---- bring your own NDA: same span format + prompt as lab/contractnli.py
